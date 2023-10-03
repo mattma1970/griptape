@@ -24,10 +24,9 @@ class LocalLlamaPromptDriver(BasePromptDriver):
         inference_endpoint: Base URL of the inference endpoint
         task: e.g. chat
         use_gpu: Use GPU during model run.
-        params: Custom model run parameters. 
+        async_session: If using aiohttp for non-blocking calls then this will be the aiohttp.ClientSession() from the context manager for the asycn calls.
         client: LocalLlamaInferenceAPI
-        tokenizer: Custom `HuggingFaceTokenizer`.
-        
+        tokenizer_path: os.Pathlike: local tokenizer model file path.
     """
     SUPPORTED_TASKS = ["chat"]
     MAX_NEW_TOKENS = 512
@@ -68,6 +67,9 @@ class LocalLlamaPromptDriver(BasePromptDriver):
     )
 
     def prompt_stack_to_dialog(self, prompt_stack: PromptStack) -> str:
+        '''
+        Parse the prompt_stack into the List[List[Dict]] expected by Llama2 local model.
+        '''
         prompt_lines = []
 
         for i in prompt_stack.inputs:
@@ -78,13 +80,10 @@ class LocalLlamaPromptDriver(BasePromptDriver):
             else:
                 prompt_lines.append({"role":"system", "content": f"{i.content}"})
 
-        #prompt_lines.append("Assistant:")
-
         return [prompt_lines]
 
 
     def try_run(self, prompt_stack: PromptStack) -> TextArtifact:
-        prompt = self.prompt_stack_to_string(prompt_stack)
         dialog = self.prompt_stack_to_dialog(prompt_stack)
 
         if self.client.task in self.SUPPORTED_TASKS:
@@ -95,8 +94,7 @@ class LocalLlamaPromptDriver(BasePromptDriver):
 
             if len(response) == 1:
                 return TextArtifact(
-                    #value=response[0]["generated_text"].strip()
-                    value = response['data'][0]['generation']['content']
+                    value = response['data'][0]['generation']['content'].strip()
                 )
             else:
                 raise Exception("Completion with more than one choice is not supported yet.")
