@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 import re
 import logging
 from huggingface_hub.utils import get_session
-import asyncio
+from . llama_interface import LlamaInterface
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,8 @@ ALL_TASKS = [
     "chat"
 ]
 
-class LocalLlamaInferenceApi:
+
+class LocalLlamaInferenceApi(LlamaInterface):
     """Client to configure requests and make calls to the HuggingFace Inference API.
 
     Example:
@@ -42,7 +43,6 @@ class LocalLlamaInferenceApi:
         inference_endpoint: str = None,
         task: Optional[str] = 'chat',
         gpu: bool = False,
-        async_session: Any = None,
     ):
         """Inits headers and API call information.
 
@@ -54,12 +54,9 @@ class LocalLlamaInferenceApi:
             gpu (`bool`, `optional`, defaults `False`):
                 Whether to use GPU instead of CPU for inference(requires Startup
                 plan at least).
-            async_session: (`aiohttp.ClientSession`)
-                The aiohttp.ClientSession to use for making a non-blocking http call using aiohttp (WIP)
         """
 
-        self.options = {"wait_for_model": True, "use_gpu": gpu, "use_async":(async_session is not None)}
-        self.async_session = async_session
+        self.options = {"wait_for_model": True, "use_gpu": gpu}
         self.task = task
 
         if self.task not in ALL_TASKS:
@@ -74,7 +71,7 @@ class LocalLlamaInferenceApi:
 
     def __repr__(self):
         # Do not add headers to repr to avoid leaking token.
-        return f"LocalLlamaInferenceAPI(end_point='{self.api_url}') use_aiohttp: {self.async_session is not None}"
+        return f"LocalLlamaInferenceAPI(end_point='{self.api_url}')"
 
     def __call__(
         self,
@@ -108,11 +105,7 @@ class LocalLlamaInferenceApi:
             payload["parameters"] = params
 
         # Make API call
-        if self.options['use_async']:
-            response = self.async_session.post(url=self.api_url, json = inputs )
-        else:
-            # Still allow blocking calls for backward compatibility
-            response = get_session().post(self.api_url, json=payload)
+        response = get_session().post(self.api_url, json=payload)
 
         # Let the user handle the response
         if raw_response:

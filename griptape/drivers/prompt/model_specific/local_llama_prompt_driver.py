@@ -10,21 +10,21 @@ from transformers import AutoTokenizer
 from griptape.artifacts import TextArtifact
 from griptape.drivers import BasePromptDriver
 
-from griptape.drivers.prompt.local_llama_InferenceAPI import LocalLlamaInferenceApi
-from griptape.tokenizers.local_llama_tokenizer import LocalLlamaTokenizer
+from griptape.drivers.prompt.model_specific import LocalLlamaInferenceApi, LocalLlamaInferenceCall
 
-import asyncio
-import aiohttp
+from griptape.tokenizers.model_specific.local_llama_tokenizer import LocalLlamaTokenizer
+from typing import Any
+
+import re
 
 
 @define
 class LocalLlamaPromptDriver(BasePromptDriver):
     """
     Attributes:
-        inference_endpoint: Base URL of the inference endpoint
+        inference_resource: Base URL of the inference endpoint OR the fully file name of the model file.
         task: e.g. chat
         use_gpu: Use GPU during model run.
-        async_session: If using aiohttp for non-blocking calls then this will be the aiohttp.ClientSession() from the context manager for the asycn calls.
         client: LocalLlamaInferenceAPI
         tokenizer_path: os.Pathlike: local tokenizer model file path.
     """
@@ -35,27 +35,42 @@ class LocalLlamaPromptDriver(BasePromptDriver):
         "max_new_tokens": MAX_NEW_TOKENS
     }
 
-    inference_endpoint: str = field(kw_only=True)
-    task: str = field(default=True, kw_only=True)
+    inference_resource: Any = field(kw_only=True) # can be either a URL or a nn.Module model
+    task: str = field(default='chat', kw_only=True)
     params: dict = field(factory=dict, kw_only=True)
     use_gpu: bool = field(default=False, kw_only=True)
-    async_session: aiohttp.ClientSession = field(kw_only=True)
     tokenizer_path: str = field(default=None, kw_only=True)
     max_tokens: int = field(default =256, kw_only=True)
     model: str = field(default='locallama', kw_only=True)
     
-    client: LocalLlamaInferenceApi = field(
-        default=Factory(
-            lambda self: LocalLlamaInferenceApi(
-                inference_endpoint=self.inference_endpoint,
-                task='chat',
-                gpu=self.use_gpu,
-                async_session=self.async_session,
+
+    if isinstance(inference_resource,str):
+        # Assume its a URL
+        client: LocalLlamaInferenceApi = field(
+            default=Factory(
+                lambda self: LocalLlamaInferenceApi(
+                    inference_endpoint=self.inference_resource,
+                    task='chat',
+                    gpu=self.use_gpu,
+                ),
+                takes_self=True
             ),
-            takes_self=True
-        ),
-        kw_only=True
-    )
+            kw_only=True
+        )
+    else:
+        # else its a model
+        client: LocalLlamaInferenceCall = field(
+            default=Factory(
+                lambda self: LocalLlamaInferenceCall(
+                    model=self.inference_resource,
+                    task ='chat',
+                    gpu=self.use_gpu,
+                ),
+                takes_self=True
+            ),
+            kw_only=True
+        )
+
 
     tokenizer: LocalLlamaTokenizer = field(
         default=Factory(
