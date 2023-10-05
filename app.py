@@ -13,7 +13,11 @@ from models.llama.llama import Llama
 # Create the agent
 def example(model,args):
     #agent = Agent(logger_level=logging.ERROR, prompt_driver=LocalLlamaPromptDriver(inference_endpoint='http://localhost:8080', task='chat', tokenizer_path=tokenizer_path))       
-    agent = Agent(logger_level=logging.ERROR, prompt_driver=LocalLlamaPromptDriver(inference_resource=model, task='chat', tokenizer_path=args.tokenizer_path))       
+    params =  {
+                "max_new_tokens": args.max_gen_len, #new tokens per generation
+                "max_tokens": args.max_seq_len, # maximum context window+new_tokens.
+            }
+    agent = Agent(logger_level=logging.ERROR, prompt_driver=LocalLlamaPromptDriver(inference_resource=model, task='chat', tokenizer_path=args.tokenizer_path, params = params))
     # Begin Chatting
     Chat(agent).start()
 
@@ -37,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument('--temperature', type=float, default=0.6)
     parser.add_argument('--top_p', type=float, default=0.4)
     parser.add_argument('--max_seq_len',type=int, default=2000)
-    parser.add_argument('--max_gen_len',type=int, default=None)
+    parser.add_argument('--max_gen_len',type=int, default=512)
     parser.add_argument('--max_batch_size',type=int, default=4)
     parser.add_argument('--debug',action='store_true', default =False, help='Be far more chatty about the internals.')
     args = parser.parse_args()

@@ -46,7 +46,7 @@ nodeLanguageServer.*/**
 dist/**
 *.egg-info
 
-*/models
+models/
 
 # translation files
 *.xlf
