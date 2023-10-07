@@ -1,3 +1,10 @@
+'''
+Sample app to test prompt driver for a locally installed model where generation is directly invoked rather than via an API.
+Because the model calls don't conform to a standard protocol bespoke interfaces used by the driver to call the chat/text generation functions on the model have been created. 
+The idea was to explore building a bespoke interface and integrate that into Griptape. This allows models to be used directly from their repos: an advantage when you want to 
+hack the models or go beyond what it possible with common API providers. 
+'''
+
 from dotenv import load_dotenv
 
 # Griptape Items

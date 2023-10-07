@@ -11,9 +11,10 @@ from .prompt.amazon_sagemaker_prompt_driver import AmazonSageMakerPromptDriver
 from .prompt.amazon_bedrock_prompt_driver import AmazonBedrockPromptDriver
 from .prompt.base_multi_model_prompt_driver import BaseMultiModelPromptDriver
 
-## Add prompt and inferenceAPI
-from .prompt.model_specific.local_llama_prompt_driver import LocalLlamaPromptDriver
-from .prompt.model_specific.local_llama_InferenceAPI import LocalLlamaInferenceApi
+## Add prompt and inferenceAPI for local llama
+from .local_prompt_model.local_llama_InferenceClient import LocalLlamaInferenceClient
+from .local_prompt_model.local_llama_InferenceInvoke import LocalLlamaInferenceInvoke
+from .local_prompt_model.local_llama_model_prompt_driver import LocalLlamaPromptDriver
 
 from .memory.conversation.base_conversation_memory_driver import BaseConversationMemoryDriver
 from .memory.conversation.local_conversation_memory_driver import LocalConversationMemoryDriver
@@ -64,7 +65,8 @@ __all__ = [
     "BaseMultiModelPromptDriver",
 
     "LocalLlamaPromptDriver",
-    "LocalLlamaInferenceAPI",
+    "LocalLlamaInferenceClient",
+    "LocalLlamaInferenceInvoke",
 
     "BaseConversationMemoryDriver",
     "LocalConversationMemoryDriver",

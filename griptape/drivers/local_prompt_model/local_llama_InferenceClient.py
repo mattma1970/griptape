@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 import re
 import logging
 from huggingface_hub.utils import get_session
-from . llama_interface import LlamaInterface
+from .llama_interface import LlamaInterface
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +13,9 @@ ALL_TASKS = [
 ]
 
 
-class LocalLlamaInferenceApi(LlamaInterface):
-    """Client to configure requests and make calls to the HuggingFace Inference API.
+class LocalLlamaInferenceClient(LlamaInterface):
+    """An inference API client for a llama2 model served locally e.g. via FastAPI
+        It allows the base URL of the endpoint to passed in a parameter
 
     Example:
 
@@ -26,7 +27,6 @@ class LocalLlamaInferenceApi(LlamaInterface):
                 inference_endpoint='http://localhost:8080',
                 task='chat',
                 gpu=True,
-                async_session=self.async_session,
                 )
 
     >>> inference([[{"role":"user","content":"Who was the first woman to swim the atlantic ocean"}]])
@@ -56,7 +56,7 @@ class LocalLlamaInferenceApi(LlamaInterface):
                 plan at least).
         """
 
-        self.options = {"wait_for_model": True, "use_gpu": gpu}
+        self.options = {"use_gpu": gpu}
         self.task = task
 
         if self.task not in ALL_TASKS:

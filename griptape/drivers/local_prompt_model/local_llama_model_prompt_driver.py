@@ -10,7 +10,7 @@ from transformers import AutoTokenizer
 from griptape.artifacts import TextArtifact
 from griptape.drivers import BasePromptDriver
 
-from griptape.drivers.prompt.model_specific import LocalLlamaInferenceApi, LocalLlamaInferenceCall
+from griptape.drivers import LocalLlamaInferenceClient, LocalLlamaInferenceInvoke
 
 from griptape.tokenizers.model_specific.local_llama_tokenizer import LocalLlamaTokenizer
 from typing import Any, List, Union
@@ -22,6 +22,10 @@ import json
 @define
 class LocalLlamaPromptDriver(BasePromptDriver):
     """
+    A driver for locally installed or served Llama2 instance. 
+    The appropriate client for either making an API call or a direct invocation of the model for the generation task will be determined based on the inference_resource that is passed.
+    Prompt stack slicing is performed to ensure that prompts with fewer than the max_seq_length specified accepted by the model are submitted.
+
     Attributes:
         inference_resource: Base URL of the inference endpoint OR the fully file name of the model file.
         task: e.g. chat
@@ -29,6 +33,7 @@ class LocalLlamaPromptDriver(BasePromptDriver):
         client: LocalLlamaInferenceAPI
         tokenizer_path: os.Pathlike: local tokenizer model file path.
     """
+
     SUPPORTED_TASKS = ["chat"]
     MAX_NEW_TOKENS = 128 # the maximum number of token to generate each time. 
     MAX_TOKENS = 1000  # This must be <= max token length specified when building the model ( this is the context window) 
@@ -48,9 +53,9 @@ class LocalLlamaPromptDriver(BasePromptDriver):
 
     if isinstance(inference_resource,str):
         # Assume its a URL
-        client: LocalLlamaInferenceApi = field(
+        client: LocalLlamaInferenceClient = field(
             default=Factory(
-                lambda self: LocalLlamaInferenceApi(
+                lambda self: LocalLlamaInferenceClient(
                     inference_endpoint=self.inference_resource,
                     task='chat',
                     gpu=self.use_gpu,
@@ -61,9 +66,9 @@ class LocalLlamaPromptDriver(BasePromptDriver):
         )
     else:
         # else its a model
-        client: LocalLlamaInferenceCall = field(
+        client: LocalLlamaInferenceInvoke = field(
             default=Factory(
-                lambda self: LocalLlamaInferenceCall(
+                lambda self: LocalLlamaInferenceInvoke(
                     model=self.inference_resource,
                     task ='chat',
                     gpu=self.use_gpu,
@@ -72,7 +77,6 @@ class LocalLlamaPromptDriver(BasePromptDriver):
             ),
             kw_only=True
         )
-
 
     tokenizer: LocalLlamaTokenizer = field(
         default=Factory(

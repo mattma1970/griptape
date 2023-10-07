@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union, Callable
 import re
 import logging
 from huggingface_hub.utils import get_session
-from . llama_interface import LlamaInterface
+from .llama_interface import LlamaInterface
 
 logger = logging.getLogger(__name__)
 
@@ -12,9 +12,11 @@ ALL_TASKS = [
     "chat"
 ]
 
-class LocalLlamaInferenceCall(LlamaInterface):
-    """Client for calling a locall installed model for inference.
-
+class LocalLlamaInferenceInvoke(LlamaInterface):
+    """
+        Client for invoking a locally installed model for inference.
+        The model instance and the name of the generation function are passed as parameters in order to allow some flexibility in expanding beyond the initial target of llama2
+    
     Example:
 
     ```python
@@ -41,17 +43,16 @@ class LocalLlamaInferenceCall(LlamaInterface):
         model: Callable = None,
         model_name: str = '',
         task: str = 'chat',
-        gpu: bool = False,
+        gpu: bool = False,  #TODO - remove and assume that the model is already on the right device.
     ):
-        """Inits headers and API call information.
-
+        """
         Args:
             model(``nn.Module``):
                 pytorch model that exposes a chat_completion function
             model_name: (``str``)
                 Human readable name of the model.
-            task (``str``, `optional`, defaults ``chat``):
-                the name of the method used to generate a response from the model.
+            task (``str``, defaults ``chat``):
+                the name of the task.
             gpu (`bool`, `optional`, defaults `False`):
                 Whether to use GPU instead of CPU for inference(requires Startup
                 plan at least).
@@ -103,5 +104,5 @@ class LocalLlamaInferenceCall(LlamaInterface):
             return response
         else:
             # Pull out the returned role and concontent
-            # Copy the structure also used by the API call to the same.
+            # Copy the schema of API call to the same.
             return {'data':[{'generation':{'role':response[0]['generation']['role'], 'content':response[0]['generation']['content']}}]}
