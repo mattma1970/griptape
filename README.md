@@ -1,5 +1,31 @@
 # griptape
 
+
+## Griptape modifications for running Llama2 local instance rather than via API to LLM providers. 
+
+You'll need to build the custom version of griptape from source. Best to do it in a new virtual environment.
+```
+python -m venv .venv 
+source .venv/bin/activate
+
+git clone https://github.com/mattma1970/griptape.git local_griptape
+git checkout local_llama_dev v0.0.1
+pip install poetry
+cd local_griptape
+poetry build
+cd dist
+pip uninstall griptape
+pip install [[insert the name of the .whl file created by the poetry build command]]
+```
+
+You will also need to download the sourcwe code and weight file for llama2. The 7B-chat model has been used to test this code. Go to (llama2)[https://github.com/facebookresearch/llama] and follow the download and ToS acceptance steps. In the current code 
+
+See ```local_griptape/app.py``` for example usage. 
+
+
+
+
+
 [![PyPI Version](https://img.shields.io/pypi/v/griptape.svg)](https://pypi.python.org/pypi/griptape)
 [![Tests](https://github.com/griptape-ai/griptape/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/griptape-ai/griptape/actions/workflows/unit-tests.yml)
 [![Docs](https://readthedocs.org/projects/griptape/badge/)](https://griptape.readthedocs.io/)
