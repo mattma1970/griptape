@@ -131,7 +131,8 @@ class LocalLlamaPromptDriver(BasePromptDriver):
         system_dialog_length = 0      
 
         if preserve_system_dialog and prompt_stack.inputs[0].role == PromptStack.SYSTEM_ROLE:
-            system_dialog = dialog_string_stack[0]
+            system_dialog, dialog_string_stack = dialog_string_stack[0], dialog_string_stack[1:]
+            dialog_stack_length-=1
             system_dialog_length = self.dialog_token_count(system_dialog)
         
         cumm_tokens=self.dialog_token_count(dialog_string_stack[-tail_length:])

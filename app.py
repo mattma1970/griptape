@@ -15,7 +15,7 @@ import logging
 import argparse
 import os
 
-from models.llama.llama import Llama
+from models.llama.llama import Llama  #update this to point to the folder where you download the code. 
 
 # Create the agent
 def example(model,args):
