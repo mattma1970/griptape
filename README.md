@@ -3,6 +3,12 @@
 
 ## Griptape modifications for running Llama2 local instance rather than via API to LLM providers. 
 
+Griptape's prompt drivers are a great abstraction for call APIs for LLM providers. However, for my projects I want more control over the models, including, using research code bases locally, or simply having the models locally to mitigate the impact of internet outages or poor quality internet in products I want to build. Moreover, I'll be running these models on commodity hardware which are limited in VRAM and so I wanted additional control of the prompt stack to avoid OOM errors which can happen with non-hardened code bases. 
+
+To start, I am targetting Llama 2 7B and added inference clients to Griptape which allow custom endpoints to be passed in and allows direct invocation of the local installation of the model. 
+I found that passing a prompt that is too long for the consumer GPU I'm using causes it to hang in a multitude of ways and so in the LocalLlamaPromptDriver I added a 'tail' function that preserves the system prompt, which is at the start of the prompt stack, but passes only the tail of the prompt stack so that the tail contains fewer than the number of tokens that will be problematic. A better approach would be to count tokens on the way into the prompt stack to ammortize the latency of tokenizing on the fly each time.
+
+
 You'll need to build the custom version of griptape from source. Best to do it in a new virtual environment.
 ```
 python -m venv .venv 
@@ -17,12 +23,15 @@ cd dist
 pip uninstall griptape
 pip install [[insert the name of the .whl file created by the poetry build command]]
 ```
+(also see https://blog.beachgeek.co.uk/getting-started-with-griptape/ for a good griptape hacking post)
 
 You will also need to download the sourcwe code and weight file for llama2. The 7B-chat model has been used to test this code. Go to (llama2)[https://github.com/facebookresearch/llama] and follow the download and ToS acceptance steps. In the current code 
 
 See ```local_griptape/app.py``` for example usage. 
 
+Make sure you update the import statement for Llama in the app.py to point to where to saved it.
 
+----
 
 
 
