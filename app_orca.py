@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 # Griptape Items
 from griptape.structures import Agent
 from griptape.utils import Chat #   <-- Added Chat
-from griptape.drivers import LocalLlamaPromptDriver
+from griptape.drivers import LocalOpenOrcaPromptDriver
 import logging
 import argparse
 import os
@@ -19,51 +19,44 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import optimum
 from generation import LocalLlama
 from types import SimpleNamespace
+from griptape.tools import WebSearch
 
 
 from models.llama.llama import Llama  #update this to point to the folder where you download the code. 
 
 # Create the agent
-def example(model,args):
-    #agent = Agent(logger_level=logging.ERROR, prompt_driver=LocalLlamaPromptDriver(inference_endpoint='http://localhost:8080', task='chat', tokenizer_path=tokenizer_path))       
+def example(model,tokenizer, args):   
     params =  {
                 "max_new_tokens": args.max_gen_len, #new tokens per generation
                 "max_tokens": args.max_seq_len, # maximum context window+new_tokens.
+                "temperature":args.temperature
             }
-    agent = Agent(logger_level=logging.ERROR, prompt_driver=LocalLlamaPromptDriver(inference_resource=model, task='chat', tokenizer_path=args.tokenizer_path, params = params))
-    #agent = Agent(logger_level=logging.ERROR, prompt_driver=LocalLlamaPromptDriver(inference_resource=model, task='chat', tokenizer_path=args.tokenizer_path))
+    agent = Agent(
+                    logger_level=logging.INFO, 
+                    prompt_driver=LocalOpenOrcaPromptDriver(
+                                                            inference_resource=model,
+                                                            tokenizer=tokenizer,
+                                                            task='chat',
+                                                            params = params,
+                                                            use_gpu=True,
+                                                            ),
+                    tools=[WebSearch(google_api_key=os.environ['google_api_key'], google_api_search_id=os.environ['google_api_search_id'])]
+                )
     # Begin Chatting
     Chat(agent).start()
 
 
-def build_llm(args):
-    llm = Llama.build(
-        ckpt_dir= os.path.join(args.root_path,args.model_path),
-        tokenizer_path=args.tokenizer_path,
-        max_seq_len=args.max_seq_len,
-        max_batch_size=args.max_batch_size,
-    )
-
-    return llm
-
-def load_local(args):
-    model = AutoModelForCausalLM.from_pretrained('upstream-griptape/models/Llama-2-13B-GPTQ', device_map="auto", use_safetensors=True)
-    params = {'max_seq_len':args.max_seq_len,'max_batch_size':args.max_batch_size, 'max_gen_len':args.max_gen_len}
-    params = SimpleNamespace(**params)
-    llm = LocalLlama(model, AutoTokenizer.from_pretrained('upstream-griptape/models/Llama-2-13B-GPTQ'), params)
-    return llm
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root_path',type=str, default='/home/mtman/Documents/Repos/griptape_experiments/upstream-griptape/models/llama/')
-    parser.add_argument('--model_path', type=str, default='llama-2-7b-chat', help='Relative path to model checkpoint')
-    parser.add_argument('--tokenizer_path', type=str, default='/home/mtman/Documents/Repos/llama/tokenizer.model')
+    parser.add_argument('--root_path',type=str, default='upstream-griptape/models/')
+    parser.add_argument('--model_path', type=str, default='Mistral-7B-OpenOrca', help='Relative path to root_path')
+    parser.add_argument('--model_name', type=str, default = 'Mistral-7B-OpenOrca')
     parser.add_argument('--temperature', type=float, default=0.6)
     parser.add_argument('--top_p', type=float, default=0.4)
-    parser.add_argument('--max_seq_len',type=int, default=2000)
-    parser.add_argument('--max_gen_len',type=int, default=512)
-    parser.add_argument('--max_batch_size',type=int, default=4)
+    parser.add_argument('--max_seq_len',type=int, default=4095)
+    parser.add_argument('--max_gen_len',type=int, default=1024)
+    parser.add_argument('--max_batch_size',type=int, default=1)
     parser.add_argument('--debug',action='store_true', default =False, help='Be far more chatty about the internals.')
     args = parser.parse_args()
 
@@ -74,6 +67,7 @@ if __name__ == "__main__":
 
 
     #llm=build_llm(args)
-
-    llm =load_local(args)
-    example(llm,args)
+    assets_path = os.path.join(args.root_path,args.model_name)
+    llm = AutoModelForCausalLM.from_pretrained(assets_path, device_map="auto", use_safetensors=True)
+    tokenizer = AutoTokenizer.from_pretrained(assets_path,)
+    example(llm,tokenizer, args)

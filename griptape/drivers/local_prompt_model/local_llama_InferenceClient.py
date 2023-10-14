@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 import re
 import logging
 from huggingface_hub.utils import get_session
-from .llama_interface import LlamaInterface
+from .local_model_interface import LocalModelInterface
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ ALL_TASKS = [
 ]
 
 
-class LocalLlamaInferenceClient(LlamaInterface):
+class LocalLlamaInferenceClient(LocalModelInterface):
     """An inference API client for a llama2 model served locally e.g. via FastAPI
         It allows the base URL of the endpoint to passed in a parameter
 

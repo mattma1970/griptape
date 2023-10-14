@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Union, Dict, Any, List
 
-class LlamaInterface(ABC):
+class LocalModelInterface(ABC):
     @abstractmethod
     def __init__(self,inference_endpoint: str = None, task: Optional[str] = 'chat', gpu: bool = False, ):
         ...

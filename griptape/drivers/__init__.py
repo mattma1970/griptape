@@ -11,10 +11,14 @@ from .prompt.amazon_sagemaker_prompt_driver import AmazonSageMakerPromptDriver
 from .prompt.amazon_bedrock_prompt_driver import AmazonBedrockPromptDriver
 from .prompt.base_multi_model_prompt_driver import BaseMultiModelPromptDriver
 
+## Add HF hub llama2 prompt driver
+from .prompt.huggingface_hug_llama2_prompt_driver import HuggingfaceLlamaPromptDriver
 ## Add prompt and inferenceAPI for local llama
 from .local_prompt_model.local_llama_InferenceClient import LocalLlamaInferenceClient
 from .local_prompt_model.local_llama_InferenceInvoke import LocalLlamaInferenceInvoke
 from .local_prompt_model.local_llama_model_prompt_driver import LocalLlamaPromptDriver
+from .local_prompt_model.local_OpenOrca_InferenceInvoke import LocalOpenOrcaInferenceInvoke
+from .local_prompt_model.local_OIpenOrca_model_prompt_driver import LocalOpenOrcaPromptDriver
 
 from .memory.conversation.base_conversation_memory_driver import BaseConversationMemoryDriver
 from .memory.conversation.local_conversation_memory_driver import LocalConversationMemoryDriver
@@ -64,9 +68,13 @@ __all__ = [
     "AmazonBedrockPromptDriver",
     "BaseMultiModelPromptDriver",
 
+    "HuggingfaceLlamaPromptDriver",
     "LocalLlamaPromptDriver",
     "LocalLlamaInferenceClient",
     "LocalLlamaInferenceInvoke",
+    "LocalOpenOrcaInferenceInvoke",
+    "LocalOpenOrcaPromptDriver",
+
 
     "BaseConversationMemoryDriver",
     "LocalConversationMemoryDriver",

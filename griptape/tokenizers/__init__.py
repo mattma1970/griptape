@@ -7,6 +7,7 @@ from griptape.tokenizers.bedrock_titan_tokenizer import BedrockTitanTokenizer
 from griptape.tokenizers.bedrock_jurassic_tokenizer import BedrockJurassicTokenizer
 from griptape.tokenizers.bedrock_claude_tokenizer import BedrockClaudeTokenizer
 from griptape.tokenizers.model_specific.local_llama_tokenizer import LocalLlamaTokenizer
+from griptape.tokenizers.model_specific.openorca_tokenizer import OpenOrcaTokenizer
 
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     "BedrockTitanTokenizer",
     "BedrockJurassicTokenizer",
     "BedrockClaudeTokenizer",
-    "LocalLlamaTokenizer"
+    "LocalLlamaTokenizer",
+    "OpenOrcaTokenizer"
 ]
