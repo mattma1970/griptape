@@ -52,5 +52,21 @@ class TestActionSubtask:
         assert json_dict["activity"] == "test action"
         assert json_dict["input"] == "test\n\ninput\n\nwith\nnewlines"
 
+    def test_init_for_action_with_nested_curly_braces(self):
+        valid_input =   'Thought: I need to use the WebSearch tool to find information on test.\n' \
+                        'Action: {"type": "tool", "name": "WebSearch", "activity": "search", "input": {"values": [{"query": "information\n on test"}]}}\n$*%)(&)' \
+                        "Observation: [{\'title\': \'Info on test\', \'description\': \'The best of test\', \'url\': \'https://en.wikipedia.org/wiki/test\'}]}\n" \
+                        "Answer: Test Answer"
+        
+        task = ToolkitTask(tools=[])
+        Pipeline().add_task(task)
+        subtask = task.add_subtask(ActionSubtask(valid_input))
+        json_dict = json.loads(subtask.action_to_json())
+        assert json_dict['type'] == "tool"
+        assert json_dict['name'] == "WebSearch"
+        assert json_dict['activity'] == "search"
+        assert json_dict['input'] == {'values': [{'query': 'information\n on test'}]}
+
     def test_input(self):
         assert ActionSubtask("{{ hello }}").input.value == "{{ hello }}"
+
