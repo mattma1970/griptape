@@ -17,7 +17,6 @@ import os
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import optimum
-from generation import LocalLlama
 from types import SimpleNamespace
 from griptape.tools import WebSearch
 
@@ -39,6 +38,7 @@ def example(model,tokenizer, args):
                                                             task='chat',
                                                             params = params,
                                                             use_gpu=True,
+                                                            system_prompt_tail_location=-3
                                                             ),
                     tools=[WebSearch(google_api_key=os.environ['google_api_key'], google_api_search_id=os.environ['google_api_search_id'])]
                 )

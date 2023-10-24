@@ -17,6 +17,7 @@ from typing import Any, List, Union
 
 import re
 import json
+import math
 
 
 @define
@@ -49,6 +50,7 @@ class LocalOpenOrcaPromptDriver(BasePromptDriver):
     model: str = field(default='locallama', kw_only=True)
     
     dialog_tail_length_guess: int = field(init=False, default=1000, kw_only=True,) # An estimate of the length of the tail of the stringified prompt_stack that has less than the max_tokens accepted by the model.
+    system_prompt_tail_location: int = field(kw_only = True, default=None )
 
     tokenizer: OpenOrcaTokenizer = field(kw_only=True)
 
@@ -155,8 +157,14 @@ class LocalOpenOrcaPromptDriver(BasePromptDriver):
         elicit_prompt = elicit_prompt.rstrip()+'\n'
         ret.append(elicit_prompt)
 
-        if preserve_system_dialog:  #Only add it back if it was dropped off.
-            ret = [system_dialog]+ret
+        if preserve_system_dialog: 
+            if self.system_prompt_tail_location and abs(self.system_prompt_tail_location)<tail_length:
+                #ret = ret[:-self.system_prompt_tail_location]+[system_dialog]+ret[self.system_prompt_tail_location:]
+                if prompt_stack.inputs[self.system_prompt_tail_location+1].role=='assistant':
+                    self.system_prompt_tail_location+=1
+                ret = [system_dialog]+ret[self.system_prompt_tail_location:]
+            else:
+                ret = [system_dialog]+ret
         return ret
 
     def dialog_token_count(self, dialog_stack: Union[str,List[str]]) -> int:

@@ -98,11 +98,16 @@ def huggingface_llama_api(model: str):
     return agent
 
 
-""" agent = Agent(
-    prompt_driver=OpenAiChatPromptDriver(
-        model='gpt-3.5-turbo'),
-        tools=[WebSearch(google_api_key=os.environ['google_api_key'], google_api_search_id=os.environ['google_api_search_id'])]
-) """
+def openai_api(model = 'gpt-3.5-turbo'):
+    agent = Agent(
+        prompt_driver=OpenAiChatPromptDriver(
+            model=model),
+            tools=[WebSearch(google_api_key=os.environ['google_api_key'], google_api_search_id=os.environ['google_api_search_id'])]
+    )
+    return agent
 
+#Chat(huggingface_api('Open-Orca/Mistral-7B-OpenOrca', openorca_prompt_stack_to_string)).start()
 #Chat(huggingface_api('mistralai/Mistral-7B-Instruct-v0.1', mistral_prompt_stack_to_string)).start()
-Chat(huggingface_api('Open-Orca/LlongOrca-13B-16k', openorca_prompt_stack_to_string)).start()
+#Chat(huggingface_api('Open-Orca/LlongOrca-13B-16k', openorca_prompt_stack_to_string)).start()
+#Chat(huggingface_api('meta-llama/Llama-2-70b-chat-hf',llama2_prompt_stack_to_string)).start()
+Chat(openai_api()).start()
