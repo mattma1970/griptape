@@ -18,7 +18,7 @@ import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import optimum
 from types import SimpleNamespace
-from griptape.tools import WebSearch
+from griptape.tools import WebSearch, Calculator, Computer
 
 
 from models.llama.llama import Llama  #update this to point to the folder where you download the code. 
@@ -40,7 +40,7 @@ def example(model,tokenizer, args):
                                                             use_gpu=True,
                                                             system_prompt_tail_location=-3
                                                             ),
-                    tools=[WebSearch(google_api_key=os.environ['google_api_key'], google_api_search_id=os.environ['google_api_search_id'])]
+                    #tools=[WebSearch(google_api_key=os.environ['google_api_key'], google_api_search_id=os.environ['google_api_search_id']),Calculator()]
                 )
     # Begin Chatting
     Chat(agent).start()
@@ -52,10 +52,10 @@ if __name__ == "__main__":
     parser.add_argument('--root_path',type=str, default='upstream-griptape/models/')
     parser.add_argument('--model_path', type=str, default='Mistral-7B-OpenOrca', help='Relative path to root_path')
     parser.add_argument('--model_name', type=str, default = 'Mistral-7B-OpenOrca')
-    parser.add_argument('--temperature', type=float, default=0.6)
+    parser.add_argument('--temperature', type=float, default=0.8)
     parser.add_argument('--top_p', type=float, default=0.4)
-    parser.add_argument('--max_seq_len',type=int, default=4095)
-    parser.add_argument('--max_gen_len',type=int, default=1024)
+    parser.add_argument('--max_seq_len',type=int, default=6095)
+    parser.add_argument('--max_gen_len',type=int, default=2000)
     parser.add_argument('--max_batch_size',type=int, default=1)
     parser.add_argument('--debug',action='store_true', default =False, help='Be far more chatty about the internals.')
     args = parser.parse_args()

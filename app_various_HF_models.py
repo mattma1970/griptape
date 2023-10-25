@@ -102,7 +102,7 @@ def openai_api(model = 'gpt-3.5-turbo'):
     agent = Agent(
         prompt_driver=OpenAiChatPromptDriver(
             model=model),
-            tools=[WebSearch(google_api_key=os.environ['google_api_key'], google_api_search_id=os.environ['google_api_search_id'])]
+            #tools=[WebSearch(google_api_key=os.environ['google_api_key'], google_api_search_id=os.environ['google_api_search_id'])]
     )
     return agent
 

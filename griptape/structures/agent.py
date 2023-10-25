@@ -4,7 +4,7 @@ from attr import define, field, Factory
 from griptape.tools import BaseTool
 from griptape.memory.structure import Run, ConversationMemory
 from griptape.structures import Structure
-from griptape.tasks import PromptTask, ToolkitTask
+from griptape.tasks import PromptTask, ToolkitTask, ToolTask
 
 if TYPE_CHECKING:
     from griptape.tasks import BaseTask
@@ -22,10 +22,13 @@ class Agent(Structure):
     def __attrs_post_init__(self) -> None:
         if len(self.tasks) == 0:
             if self.tools:
-                task = ToolkitTask(
+                """ task = ToolkitTask(
                     self.input_template,
-                    tools=self.tools
-                )
+                    tools=self.tools)
+                 """
+                task = ToolTask(
+                    self.input_template, tool=self.tools[0]
+                )                
             else:
                 task = PromptTask(
                     self.input_template
