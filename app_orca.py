@@ -19,9 +19,19 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import optimum
 from types import SimpleNamespace
 from griptape.tools import WebSearch, Calculator, Computer
-
+from griptape.rules import Ruleset, Rule
 
 from models.llama.llama import Llama  #update this to point to the folder where you download the code. 
+
+cafe_rules = Ruleset(name='HouseRules',
+                    rules=[
+                         Rule('Substituting ingredients in a dish is not permitted.'),
+                         Rule('It is allowed to remove an ingredient from a dish without replacing it'),
+                         Rule('It is permitted to remove meat from any dish and replace it with tofu or mushrooms.'),
+                         Rule('You never make up answers. If you don''t know or you don''t have the information then you just politely say so'),
+                         Rule('If a dish the customer asks for is not on the menu then you must tell them. You do not make up dishes or prices.'),
+                         Rule('If a customer appears to be placing an order for a dish then respond in plain text with JSON objects that have the following keys: dish_name,price')]
+            )
 
 # Create the agent
 def example(model,tokenizer, args):   
@@ -32,6 +42,7 @@ def example(model,tokenizer, args):
             }
     agent = Agent(
                     logger_level=logging.INFO, 
+                    rulesets=[cafe_rules],
                     prompt_driver=LocalOpenOrcaPromptDriver(
                                                             inference_resource=model,
                                                             tokenizer=tokenizer,
