@@ -1,4 +1,10 @@
-# griptape
+mtman@ development branch for local model experiments, and in particular OpenOrca, and menu querying
+
+
+
+
+
+griptape
 
 [![PyPI Version](https://img.shields.io/pypi/v/griptape.svg)](https://pypi.python.org/pypi/griptape)
 [![Tests](https://github.com/griptape-ai/griptape/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/griptape-ai/griptape/actions/workflows/unit-tests.yml)
