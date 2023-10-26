@@ -15,6 +15,9 @@ from .prompt.amazon_sagemaker_prompt_driver import AmazonSageMakerPromptDriver
 from .prompt.amazon_bedrock_prompt_driver import AmazonBedrockPromptDriver
 from .prompt.base_multi_model_prompt_driver import BaseMultiModelPromptDriver
 
+#mtman @ 26/10/23
+from .prompt.hugging_face_vllm_prompt_driver import HuggingFacevLLMPromptDriver, AltInferenceApi
+
 from .memory.conversation.base_conversation_memory_driver import (
     BaseConversationMemoryDriver,
 )
@@ -79,6 +82,7 @@ __all__ = [
     "AnthropicPromptDriver",
     "AmazonSageMakerPromptDriver",
     "AmazonBedrockPromptDriver",
+    "HuggingFacevLLMPromptDriver", "AltInferenceApi"
     "BaseMultiModelPromptDriver",
     "BaseConversationMemoryDriver",
     "LocalConversationMemoryDriver",
