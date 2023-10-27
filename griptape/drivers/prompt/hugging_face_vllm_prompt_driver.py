@@ -13,7 +13,7 @@ from transformers import AutoTokenizer
 from griptape.artifacts import TextArtifact
 from griptape.drivers import BasePromptDriver
 from griptape.tokenizers import HuggingFaceTokenizer
-from typing import Optional, Dict, Any, List, Union
+from typing import Optional, Dict, Any, List, Union, Callable
 
 @define 
 class AltInferenceApi:
@@ -47,12 +47,14 @@ class AltInferenceApi:
             params: Optional[Dict] = None,
             data: Optional[bytes] = None,
             ):
-        """ inputs (`str` or `Dict` or `List[str]` or `List[List[str]]`, *optional*):
+        """ Args:
+            inputs (`str` or `Dict` or `List[str]` or `List[List[str]]`, *optional*):
                 Inputs for the prediction.
             params (`Dict`, *optional*):
                 Additional parameters for the models. Will be sent as `parameters` in the
                 payload.
         """
+
         # Make API call to an arbitrary URL
         payload = {}
 
@@ -134,12 +136,31 @@ class HuggingFacevLLMPromptDriver(BasePromptDriver):
         ),
         kw_only=True,
     )
+
     stream: bool = field(default=False, kw_only=True)
+
+    def __attrs_post_init__(self):
+        self.prompt_stack_to_string = self.prompt_stack_to_string_template
+
 
     @stream.validator
     def validate_stream(self, _, stream):
         if stream:
             raise ValueError("streaming is not supported")
+
+    def prompt_stack_to_string_template(self, prompt_stack: PromptStack) -> str:
+        """
+            Use the tokenizer.apply_chat_template to properly format the messages
+
+            prompt_stack (PromptStack)
+                messages to be converts to string for prompting.
+        """
+        ret = None
+        try:
+            ret = self.tokenizer.tokenizer.apply_chat_template(prompt_stack.inputs, tokenize=False, add_generation_prompt=True)
+        except:
+            raise NotImplementedError(f'Tokenizer {self.tokenizer.__name__} does not support the apply_chat_template function')
+        return ret
 
     def try_run(self, prompt_stack: PromptStack) -> TextArtifact:
         prompt = self.prompt_stack_to_string(prompt_stack)
