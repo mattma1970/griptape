@@ -27,7 +27,6 @@ class Chat:
 
             if question.lower() in self.exit_keywords:
                 self.output_fn(self.exiting_text)
-
                 break
             else:
                 self.output_fn(self.processing_text)

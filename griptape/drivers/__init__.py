@@ -10,6 +10,7 @@ from .prompt.hugging_face_pipeline_prompt_driver import (
     HuggingFacePipelinePromptDriver,
 )
 from .prompt.hugging_face_hub_prompt_driver import HuggingFaceHubPromptDriver
+from .prompt.hugging_face_inference_client_prompt_driver import HuggingFaceInferenceClientPromptDriver
 from .prompt.anthropic_prompt_driver import AnthropicPromptDriver
 from .prompt.amazon_sagemaker_prompt_driver import AmazonSageMakerPromptDriver
 from .prompt.amazon_bedrock_prompt_driver import AmazonBedrockPromptDriver
@@ -76,6 +77,7 @@ __all__ = [
     "CoherePromptDriver",
     "HuggingFacePipelinePromptDriver",
     "HuggingFaceHubPromptDriver",
+    "HuggingFaceInferenceClientPromptDriver",
     "AnthropicPromptDriver",
     "AmazonSageMakerPromptDriver",
     "AmazonBedrockPromptDriver",
