@@ -90,7 +90,6 @@ class PromptTask(BaseTextInputTask):
 
     def run(self) -> TextArtifact:
         self.output = self.active_driver().run(self.prompt_stack)
-
         return self.output
 
     def active_driver(self) -> BasePromptDriver:

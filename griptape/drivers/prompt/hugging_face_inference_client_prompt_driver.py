@@ -15,54 +15,68 @@ from griptape.artifacts import TextArtifact
 from griptape.drivers import BasePromptDriver
 from griptape.tokenizers import HuggingFaceTokenizer
 
-
 @define(kw_only=True)
 class ExtendedInferenceClient(InferenceClient):
     """
-    Extends InferenceClient to unify API with other griptape clients
-    Attributes:
-        task: key of the SUPPORTED_TASK dictionary
+    Extends InferenceClient with attributes used with InferenceAPI
+    Additional attributes:
+        task: The SUPPORTED_TASK
     """
-    token: str = field(default='DUMMY',kw_only=True)
-    model: str = field(kw_only=True) # HF namespace/repo_id or URL of endpoint https://huggingface.co/docs/huggingface_hub/package_reference/inference_client
-    pretrained_tokenizer: str =field(kw_only=True) # Either HF namespace/repo or local folder where tokenizer is stored.
+    model: str = field() 
+    pretrained_tokenizer: str =field()
+    token: str = field(default='NONE',kw_only=True) # Only needed if using Huggingface infrastructure
     timeout: Optional[float] = field(default=None)
-    headers: Optional[Dict[str,str]] = field(default=None)
+    headers: Optional[Dict[str,str]] = field(default={"Content-Type": "application/json"})
     cookies: Optional[Dict[str,str]] = field(default=None)
-    task: Optional[str] = field(default='text-generation')
-    use_gpu: Optional[bool] = field(default=False)
+    task: str = field(default='text_generation')
+
+    def __attr_post_init__(self):
+        self.token=self.api_token
+
 
 @define
 class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
     """
     Attributes:
-        token: Hugging Face Hub API token.
-        params: Custom model run parameters.
         model: Hugging Face Hub model name or endpoint URL https://huggingface.co/docs/huggingface_hub/package_reference/inference_client
-        client: InferenceClient - Superceeds InferernceAPI.
-        pretrained_tokenizer: Custom `HuggingFaceTokenizer`. Specify with Hugging Face Hub model name or the path to the locally saved Autotokenizer.
-        task: Key of the SUPPORTED_TASK dictionary that should be invoked on the InferenceClient. InferenceClient exposes many functions for specialised tasks such as automatic_speech_recognition, audio_classification.
-        use_gpu: For backward compatibility with InferenceAPI
+        pretrained_tokenizer: Specify with Hugging Face Hub model name or the path to the locally saved Autotokenizer.
+        token: Hugging Face Hub API token.
+        timeout, headers, cookiers: InferenceClient parameters.
+        params: InferenceClient task specific parameters e.g. for text_generation see https://huggingface.co/docs/huggingface_hub/v0.18.0.rc0/en/package_reference/inference_client#huggingface_hub.inference._text_generation.TextGenerationParameters
+        
+        task: The SUPPORTED_TASK that should be invoked on the InferenceClient.
+        stream: bool indicating if endpoint should be stream responses back.
         stream_chunk_size: Number of chunks of a streaming response to accumulate before yeilding the results.
 
+        client: InferenceClient - Superceeds InferernceAPI.
     """
 
-    SUPPORTED_TASKS = {'text-generation':"text_generation"}
-    MAX_NEW_TOKENS = 250
+    SUPPORTED_TASKS = ['text_generation']
+    # Defaults for InferenceClient.params
     DEFAULT_PARAMS = {
-        "return_full_text": True,
-        "max_new_tokens": MAX_NEW_TOKENS,
+        'return_full_text': False,
+        'max_new_tokens': 1024,
+        'stream': False
     }
-
-    token: str = field(default='NONE',kw_only=True)
-    params: dict = field(factory=dict, kw_only=True)
+     # InferernceClient params
     model: str = field(kw_only=True) 
-    pretrained_tokenizer: str =field(kw_only=True) 
-    timeout: Optional[float] = field(default=None,kw_only=True)
-    headers: Optional[Dict[str,str]] = field(default={"Content-Type": "application/json"}, kw_only=True)
-    cookies: Optional[Dict[str,str]] = field(default=None,kw_only=True)
-    task: Optional[str] = field(default='text-generation', kw_only=True)
-    use_gpu: Optional[bool] = field(default=False,kw_only=True)
+    pretrained_tokenizer: str =field(kw_only=True)
+    token: str = field(kw_only=True)
+    timeout: Optional[float] = field(default=None, kw_only=True)
+    headers: Optional[Dict[str,str]] = field(default=Factory(dict), kw_only=True)
+    cookies: Optional[Dict[str,str]] = field(default=None, kw_only=True)
+
+    params: dict = field(
+        default=Factory(
+            lambda: 
+                {'max_new_tokens':1024,'temperature':0.9, 'stream':False}
+            ),
+            kw_only=True,
+    ) #InferenceClient task specific parameters
+
+    task: Optional[str] = field(default='text_generation',kw_only=True)
+    stream: Optional[bool] = field(default=False, kw_only=True)
+    stream_chunk_size: Optional[int] = field(default=5, kw_only=True)
 
     client: ExtendedInferenceClient= field(
         default=Factory(
@@ -72,9 +86,8 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
                 token=self.token,
                 timeout=self.timeout,
                 headers = self.headers,
-                cookies=self.cookies, 
-                task=self.task,
-                use_gpu=self.use_gpu,
+                cookies = self.cookies, 
+                task = self.task,
             ),
             takes_self=True,
         ),
@@ -84,7 +97,7 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
         default=Factory(
             lambda self: HuggingFaceTokenizer(
                 tokenizer=AutoTokenizer.from_pretrained(self.pretrained_tokenizer),
-                max_tokens=self.MAX_NEW_TOKENS,
+                max_tokens= (self.DEFAULT_PARAMS | self.params)['max_new_tokens'],
             ),
             takes_self=True,
         ),
@@ -97,9 +110,10 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
         ),
         kw_only=True,
     ) 
-    stream: bool = field(default=False, kw_only=True)
-    stream_chunk_size: int = field(default=5, kw_only=True)
     
+    def __attr_post_init__(self):
+        assert self.stream != self.paras['stream'], 'Stream setting in driver must equal params["stream"]'
+
     def apply_chat_template(self,template_func: Callable, data_field: str = 'inputs', **kwargs: Dict) -> Callable:
         def inner(prompt_stack: PromptStack)-> str:
             inputs = getattr(prompt_stack,data_field)
@@ -109,10 +123,9 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
     def try_run(self, prompt_stack: PromptStack) -> TextArtifact:
         prompt = self.prompt_stack_to_string(prompt_stack)
 
-        if self.client.task in self.SUPPORTED_TASKS.keys():
-            response = getattr(self.client, self.SUPPORTED_TASKS[self.task])(
-                prompt, **(self.DEFAULT_PARAMS | self.params)
-            )
+        if self.client.task in self.SUPPORTED_TASKS:
+            response = getattr(self.client, self.task)(
+                prompt, **(self.DEFAULT_PARAMS | self.params))
 
             if len(response) == 1:
                 value=response[0]["generated_text"].strip()
@@ -131,9 +144,9 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
     def try_stream(self, prompt_stack: PromptStack) -> Iterator[TextArtifact]:
         prompt = self.prompt_stack_to_string(prompt_stack)
 
-        if self.client.task in self.SUPPORTED_TASKS.keys():
-            result = getattr(self.client, self.SUPPORTED_TASKS[self.task])(
-                prompt, **(self.DEFAULT_PARAMS | self.params), stream=True
+        if self.client.task in self.SUPPORTED_TASKS:
+            result = getattr(self.client, self.task)(
+                prompt, **(self.DEFAULT_PARAMS | self.params)
             )
         chunks_counter = 0
         delta_content = ""
