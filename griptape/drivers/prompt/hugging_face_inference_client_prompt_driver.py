@@ -56,6 +56,7 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
     DEFAULT_PARAMS = {
         'return_full_text': False,
         'max_new_tokens': 1024,
+        'temperature': 0.9,
         'stream': False
     }
      # InferernceClient params
@@ -67,10 +68,7 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
     cookies: Optional[Dict[str,str]] = field(default=None, kw_only=True)
 
     params: dict = field(
-        default=Factory(
-            lambda: 
-                {'max_new_tokens':1024,'temperature':0.9, 'stream':False}
-            ),
+        default=Factory(dict),
             kw_only=True,
     ) #InferenceClient task specific parameters
 
@@ -125,7 +123,7 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
 
         if self.client.task in self.SUPPORTED_TASKS:
             response = getattr(self.client, self.task)(
-                prompt, **(self.DEFAULT_PARAMS | self.params))
+                prompt, **(self.params | self.DEFAULT_PARAMS))
 
             if len(response) == 1:
                 value=response[0]["generated_text"].strip()
@@ -146,7 +144,7 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
 
         if self.client.task in self.SUPPORTED_TASKS:
             result = getattr(self.client, self.task)(
-                prompt, **(self.DEFAULT_PARAMS | self.params)
+                prompt, **(self.params | self.DEFAULT_PARAMS)
             )
         chunks_counter = 0
         delta_content = ""
