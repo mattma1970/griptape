@@ -1,5 +1,6 @@
 from typing import Iterator, Optional, Dict, Callable
 from os import environ
+import re
 
 from griptape.utils import PromptStack
 
@@ -55,10 +56,12 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
     # Defaults for InferenceClient.params
     DEFAULT_PARAMS = {
         'return_full_text': False,
-        'max_new_tokens': 1024,
-        'temperature': 0.9,
-        'stream': False
+        'max_new_tokens': 1024,   # Note: If served by TGI this value must be <= TGI.max-input-tokens and max-total-tokens
+        'temperature': 0.7,
+        'stream': False,
     }
+    STOP_SEQUENCES_PARAMETER_NAME = 'stop_sequences'
+
      # InferernceClient params
     model: str = field(kw_only=True) 
     pretrained_tokenizer: str =field(kw_only=True)
@@ -75,6 +78,7 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
     task: Optional[str] = field(default='text_generation',kw_only=True)
     stream: Optional[bool] = field(default=False, kw_only=True)
     stream_chunk_size: Optional[int] = field(default=5, kw_only=True)
+    stop_sequence_length: int = field(init=False)
 
     client: ExtendedInferenceClient= field(
         default=Factory(
@@ -95,7 +99,7 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
         default=Factory(
             lambda self: HuggingFaceTokenizer(
                 tokenizer=AutoTokenizer.from_pretrained(self.pretrained_tokenizer),
-                max_tokens= (self.DEFAULT_PARAMS | self.params)['max_new_tokens'],
+                max_tokens= (self.DEFAULT_PARAMS | self.params )['max_new_tokens'],
             ),
             takes_self=True,
         ),
@@ -109,8 +113,12 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
         kw_only=True,
     ) 
     
-    def __attr_post_init__(self):
-        assert self.stream != self.paras['stream'], 'Stream setting in driver must equal params["stream"]'
+    def __attrs_post_init__(self):
+        assert self.stream == self.params['stream'], 'Stream setting in driver must equal params["stream"]'
+        if self.STOP_SEQUENCES_PARAMETER_NAME in self.params:
+            self.stop_sequence_length = max([len(stop_seq) for stop_seq in self.params])
+        else: 
+            self.stop_sequence_length = 0
 
     def apply_chat_template(self,template_func: Callable, data_field: str = 'inputs', **kwargs: Dict) -> Callable:
         def inner(prompt_stack: PromptStack)-> str:
@@ -123,7 +131,7 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
 
         if self.client.task in self.SUPPORTED_TASKS:
             response = getattr(self.client, self.task)(
-                prompt, **(self.params | self.DEFAULT_PARAMS))
+                prompt, **(self.DEFAULT_PARAMS | self.params))
 
             if len(response) == 1:
                 value=response[0]["generated_text"].strip()
@@ -139,21 +147,34 @@ class HuggingFaceInferenceClientPromptDriver(BasePromptDriver):
                 f"only models with the following tasks are supported: {self.SUPPORTED_TASKS}"
             )
 
+    def remove_stop_sequences(self, chunk: str)->str:
+        """ Stop sequences are sometimes returned at the end of the sequence. Remove them"""
+        if 'stop_sequences' in self.params:
+            for param in self.params['stop_sequences']:
+                chunk = chunk.replace(param,"")
+            
+        return chunk.strip('\n').strip()
+
     def try_stream(self, prompt_stack: PromptStack) -> Iterator[TextArtifact]:
         prompt = self.prompt_stack_to_string(prompt_stack)
-
         if self.client.task in self.SUPPORTED_TASKS:
             result = getattr(self.client, self.task)(
-                prompt, **(self.params | self.DEFAULT_PARAMS)
+                prompt, **(self.DEFAULT_PARAMS | self.params)
             )
         chunks_counter = 0
         delta_content = ""
         for chunk in result:
             delta_content += chunk
             chunks_counter+=1
-            if chunks_counter>self.stream_chunk_size:
-                yield TextArtifact(value=delta_content)
-                chunks_counter=0
-                delta_content = ""
+            if chunks_counter > self.stream_chunk_size:
+                if len(delta_content)>self.stop_sequence_length and self.stop_sequence_length>0:
+                    yield TextArtifact(value=delta_content[:-self.stop_sequence_length])
+                    chunks_counter=1
+                    delta_content = delta_content[-self.stop_sequence_length:]
+                else:
+                    yield TextArtifact(value=delta_content)
+                    chunks_counter=0
+                    delta_content = ""
         if chunks_counter>0:
+            delta_content = self.remove_stop_sequences(delta_content)
             yield TextArtifact(value=delta_content)
